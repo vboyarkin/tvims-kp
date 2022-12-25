@@ -18,6 +18,8 @@ N = 2
 Θ_2 = -5
 Θ_3 = -0.02
 
+template = '{:.' + str(4) + 'f}'
+
 # вектор ошибок, распределенный нормально
 E = np.random.uniform(-3 * σ, 3 * σ, n)
 
@@ -56,6 +58,7 @@ while (abs(T_Y) > kvantil) or ((abs(T_Y) < kvantil) and (m == 1)):
     X_tr = np.transpose(X)
     X_tr_X = np.linalg.inv(np.matmul(X_tr, X))
     Thetta = np.matmul(np.matmul(X_tr_X, X_tr), Y)
+    # E ̂_j=Y_j-X_j θ ̂_j – оценка вектора ошибок
     E_sr = Y - np.matmul(X, Thetta)
     norm_E_sr = np.sqrt(np.matmul(np.transpose(E_sr), E_sr))
     T_Y = (Thetta[m] * np.sqrt(n - (m + 1))) / \
@@ -63,18 +66,34 @@ while (abs(T_Y) > kvantil) or ((abs(T_Y) < kvantil) and (m == 1)):
     kvantil = st.t.ppf(0.975, n - (m + 1))
 
     if ((abs(T_Y) < kvantil) and (m == 1)):
-        print("|T_Y| = ", abs(T_Y), "< t_0,975(", n - (m + 1), ") = ",
-              kvantil, " => H0 принимается, но m = 1 => смотрим дальше")
+        print("|T_Y| = ", template.format(abs(T_Y)), "< t_0,975(", n - (m + 1), ") = ",
+              template.format(kvantil), " => H0 принимается, но m = 1 => смотрим дальше")
     elif abs(T_Y) > kvantil:
-        print("|T_Y| = ", abs(T_Y), "> t_0,975(", n - (m + 1), ") = ",
-              kvantil, " => H0 не принимается, thetta_", m, "!=0")
+        print("|T_Y| = ", template.format(abs(T_Y)), "> t_0,975(", n - (m + 1), ") = ",
+              template.format(kvantil), " => H0 не принимается, thetta_", m, "!=0")
     elif abs(T_Y) < kvantil:
-        print("|T_Y| = ", abs(T_Y), "< t_0,975(", n - (m + 1), ") = ",
-              kvantil, " => H0 принимается, thetta_", m, "=0 => m^ = ", m-1, '\n')
+        print("|T_Y| = ", template.format(abs(T_Y)), "< t_0,975(", n - (m + 1), ") = ",
+              template.format(kvantil), " => H0 принимается, thetta_", m, "=0 => m^ = ", m-1, '\n')
 m -= 1
+X = np.zeros((40, m+1))
+for j in range(m+1):
+    for i in range(40):
+        X[i][j] = x[i]**j
+print(len(np.transpose(X)))
+X_tr = np.transpose(X)
+X_tr_X = np.linalg.inv(np.matmul(X_tr, X))
+Thetta = np.matmul(np.matmul(X_tr_X, X_tr), Y)
+E_sr = Y - np.matmul(X, Thetta)
+norm_E_sr = np.sqrt(np.matmul(np.transpose(E_sr), E_sr))
+
+print("____________ЗАДАНИЕ №6____________ \n")
+# Вычислить оценку дисперсии σ2 случайной ошибки.
+σ_sr = 1/(40)*norm_E_sr**2
+
+
 print("Оценки неизвестных параметров:")
 for i in range(m+1):
-    print("thetta_", i, "^ = ", Thetta[i])
+    print("thetta_", i, "^ = ", template.format(Thetta[i]))
 
 Y_signal = np.zeros(n)
 for i in range(n):
@@ -98,7 +117,8 @@ for i in range(m+1):
         (np.sqrt(X_tr_X[m][m])) / np.sqrt(n - m - 1)
     b = Thetta[i] + kvantil1 * norm_E_sr * \
         (np.sqrt(X_tr_X[m][m])) / np.sqrt(n - m - 1)
-    print("Доверительный интервал для thetta_", i, " = [", a, ",", b, "]")
+    print("Доверительный интервал для thetta_", i,
+          " = [", template.format(a), ",", template.format(b), "]")
 print('\n')
 
 print("Оценка для уровня надежности = 0.99")
@@ -107,7 +127,8 @@ for i in range(m+1):
         (np.sqrt(X_tr_X[m][m])) / np.sqrt(n - m - 1)
     b = Thetta[i] + kvantil2 * norm_E_sr * \
         (np.sqrt(X_tr_X[m][m])) / np.sqrt(n - m - 1)
-    print("Доверительный интервал для thetta_", i, " = [", a, ",", b, "]")
+    print("Доверительный интервал для thetta_", i,
+          " = [", template.format(a), ",", template.format(b), "]")
 print('\n')
 
 print("____________ЗАДАНИЕ №3____________ \n")
@@ -120,25 +141,24 @@ b_95 = np.zeros(n)
 for i in range(n):
     matr_1 = np.matmul(X[i], X_tr_X)
     matr_2 = np.matmul(matr_1, np.transpose(X[i]))
-    a_95[i] = Y_signal[i] - kvantil1 * norm_E_sr * \
-        (np.sqrt(matr_2)) / np.sqrt(n - m - 1)
-    b_95[i] = Y_signal[i] + kvantil1 * norm_E_sr * \
-        (np.sqrt(matr_2)) / np.sqrt(n - m - 1)
+    a_95[i] = template.format(
+        Y_signal[i] - kvantil1 * norm_E_sr * (np.sqrt(matr_2)) / np.sqrt(n - m - 1))
+    b_95[i] = template.format(
+        Y_signal[i] + kvantil1 * norm_E_sr * (np.sqrt(matr_2)) / np.sqrt(n - m - 1))
 
-print("Все левосторонние интервалы при уровне надежности = 0.95", a_95)
-print("Все правосторнние интервалы при уровне надежности = 0.95", a_95, "\n")
+est_var = np.matmul(np.transpose(E_sr), E_sr) / (n - m - 1)
+
 print("Оценка для уровня надежности = 0.99")
 a_99 = np.zeros(n)
 b_99 = np.zeros(n)
 for i in range(n):
     matr_1 = np.matmul(X[i], X_tr_X)
     matr_2 = np.matmul(matr_1, np.transpose(X[i]))
-    a_99[i] = Y_signal[i] - kvantil2 * norm_E_sr * \
-        (np.sqrt(matr_2)) / np.sqrt(n - m - 1)
-    b_99[i] = Y_signal[i] + kvantil2 * norm_E_sr * \
-        (np.sqrt(matr_2)) / np.sqrt(n - m - 1)
-print("Все левосторонние интервалы при уровне надежности = 0.99", a_99)
-print("Все правосторнние интервалы при уровне надежности = 0.99", a_99, "\n")
+    a_99[i] = template.format(
+        Y_signal[i] - kvantil2 * (np.sqrt(est_var*matr_2)))
+    b_99[i] = template.format(
+        Y_signal[i] + kvantil2 * (np.sqrt(est_var * matr_2)))
+
 
 print("____________ЗАДАНИЕ №4____________ \n")
 # Представить графически истинный полезный сигнал,
@@ -175,7 +195,7 @@ ax2.plot(x, Y_S, c='#00FFFF')
 ax2.plot(x, a_95, c='#FF4500')
 ax2.plot(x, b_95, c='#7B68EE')
 lgnd2 = ax2.legend(['Полезный сигнал', 'Правост. доверит. интервал для 1-apha = 0.95',
-                   'Левостор. доверит. интервал для 1-apha = 0.95'], loc='lower center')
+                    'Левостор. доверит. интервал для 1-apha = 0.95'], loc='lower center')
 fig2.set_figwidth(6)
 fig2.set_figheight(5)
 # plt.gcf().canvas.set_window_title(
@@ -187,7 +207,7 @@ ax3.plot(x, Y_S, c='#FF1493')
 ax3.plot(x, a_99, c='#663399')
 ax3.plot(x, b_99, c='#7CFC00')
 lgnd3 = ax3.legend(['Полезный сигнал', 'Правост. доверит. интервал для 1-apha = 0.99',
-                   'Левостор. доверит. интервал для 1-apha = 0.99'], loc='lower center')
+                    'Левостор. доверит. интервал для 1-apha = 0.99'], loc='lower center')
 fig3.set_figwidth(6)
 fig3.set_figheight(5)
 # plt.gcf().canvas.set_window_title(
@@ -210,79 +230,76 @@ print("Построение гистограммы \n")
 print("____________ЗАДАНИЕ №6____________ \n")
 # Вычислить оценку дисперсии σ2 случайной ошибки.
 σ_sr = 1/(40)*norm_E_sr**2
-print("Оценка дисперсии случайной ошибки = ", σ_sr, "\n")
-
-
-
+print("Оценка дисперсии случайной ошибки = ", template.format(σ_sr), "\n")
 
 print("____________ЗАДАНИЕ №7____________ \n")
-#По остаткам регрессии с помощью χ2-критерия Пирсона на уровне значимости 0.05 проверить
-#гипотезу о том, что закон распределения  ошибки наблюдения является нормальным.
+# По остаткам регрессии с помощью χ2-критерия Пирсона на уровне значимости 0.05 проверить
+# гипотезу о том, что закон распределения  ошибки наблюдения является нормальным.
 
-#кол-во разбиений
+# кол-во разбиений
 l = 7
 t = np.zeros(l+2)
-#0.01 - небольшая погрешность
+# 0.01 - небольшая погрешность
 t[1] = 0.01+np.min(E_sr)
 t[l] = 0.01+np.max(E_sr)
-#ширина одного столбца гистограммы
+# ширина одного столбца гистограммы
 step = abs(t[1]-t[l])/(l-1)
 
-for i in range (l-2):
-    t[i+2] = step + t [i+1]
+for i in range(l-2):
+    t[i+2] = step + t[i+1]
 
-t[l+1] = step + t [l]
-t[0] = -step + t [1]
-
-
+t[l+1] = step + t[l]
+t[0] = -step + t[1]
 
 
 ni = np.zeros(l-1)
 pid = np.zeros(l+1)
 pi = np.zeros(l+1)
 
-#pi^ = 0 на 0 и на l
+# pi^ = 0 на 0 и на l
 pid[0] = 0
 pid[l] = 0
-#вычисление вероятности через функцию лапласа
-for i in range (l+1):
+# вычисление вероятности через функцию лапласа
+for i in range(l+1):
     pi[i] = abs(sp.stats.norm.cdf(t[i+1]/σ_sr) - sp.stats.norm.cdf(t[i]/σ_sr))
 
-#вычисление того, сколько ошибок попало в каждый интервал разбиения
-for i in range (l-1):
-    for j in range (n):
-        if (E_sr[j]>= t[i]) and (E_sr[j] < t[i+1]):
+# вычисление того, сколько ошибок попало в каждый интервал разбиения
+for i in range(l-1):
+    for j in range(n):
+        if (E_sr[j] >= t[i]) and (E_sr[j] < t[i+1]):
             ni[i] += 1
 
-    print (ni[i])
+    print(ni[i])
 fig6, ax6 = plt.subplots()
 f = np.zeros(l)
-for i in range (l-1):
-    f[i]= ni[i]/(n*step)
-for i in range (l-1):
-    ax6.plot([t[i+1],t[i+2]],[f[i],f[i]],c = 'r')
-for i in range (l-1):
-    ax6.plot([t[i+1],t[i+1]],[0,f[i]],c = 'r')
+for i in range(l-1):
+    f[i] = ni[i]/(n*step)
+for i in range(l-1):
+    ax6.plot([t[i+1], t[i+2]], [f[i], f[i]], c='r')
+for i in range(l-1):
+    ax6.plot([t[i+1], t[i+1]], [0, f[i]], c='r')
     ax6.plot([t[i + 2], t[i + 2]], [0, f[i]], c='r')
-for i in range (l-2):
+for i in range(l-2):
     pid[i+1] = ni[i+1]/n
 fig6.set_figwidth(6)
 fig6.set_figheight(5)
 t_1 = np.zeros(100)
 t_1[0] = t[1]
-t_1[99]= t[l]
+t_1[99] = t[l]
 step_1 = abs(t[1]-t[l])/99
 for i in range(98):
     t_1[i+1] = step_1 + t_1[i]
-plt.plot (t_1, norm. pdf (t_1, 0, σ))
+plt.plot(t_1, norm. pdf(t_1, 0, σ))
 plt.show()
 T = 0
-for i in range (l+1):
+for i in range(l+1):
     T += (pi[i]-pid[i])**2/pi[i]
 T = T*n
 
-kvantil_hi  = 12.6
+kvantil_hi = 12.6
 if (T > kvantil_hi):
-    print("T(Z) = ",template.format(T),"> kvantil_hi^2 = ", kvantil_hi,"=> гипотеза о том, что распределение нормальное, не принимается")
+    print("T(Z) = ", template.format(T), "> kvantil_hi^2 = ", kvantil_hi,
+          "=> гипотеза о том, что распределение нормальное, не принимается")
 else:
-    print("T(Z) = ", template.format(T), "< kvantil_hi^2 = ", kvantil_hi, "=> гипотеза о том, что распределение нормальное, принимается")
+    print("T(Z) = ", template.format(T), "< kvantil_hi^2 = ", kvantil_hi,
+          "=> гипотеза о том, что распределение нормальное, принимается")
