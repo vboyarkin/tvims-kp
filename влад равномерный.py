@@ -166,6 +166,38 @@ print("____________ЗАДАНИЕ №4____________ \n")
 # • оценку полезного сигнала, полученную в шаге 1,
 # • доверительные интервалы полезного сигнала, полученные в шаге 3.
 
+
+def confidence_intl_dot(x, side, kvantil_intl):
+    Y_s = 0
+    X = []
+    for j in range(m + 1):
+        X.append(x**j)
+        Y_s += Thetta[j] * (x ** j)
+    alfa1 = np.matmul(X, X_tr_X)
+    alfa = np.matmul(alfa1, np.transpose(X))
+
+    left = Y_s - kvantil_intl * norm_E_sr*np.sqrt(alfa/(n-m-1))
+    right = Y_s + kvantil_intl * norm_E_sr*np.sqrt(alfa/(n-m-1))
+
+    if (side == 'left'):
+        return left
+    if (side == 'right'):
+        return right
+    raise Exception("side should be either left or right")
+
+
+def confidence_intervals(linspace=None):
+    if (linspace == None):
+        linspace = np.linspace(-5, 5, 1000)
+
+    l_95 = [confidence_intl_dot(dot, 'left', kvantil1) for dot in linspace]
+    r_95 = [confidence_intl_dot(dot, 'right', kvantil1) for dot in linspace]
+    l_99 = [confidence_intl_dot(dot, 'left', kvantil2) for dot in linspace]
+    r_99 = [confidence_intl_dot(dot, 'right', kvantil2) for dot in linspace]
+
+    return [l_95, r_95, l_99, r_99, linspace]
+
+
 print("Построение графиков \n")
 fig1, ax1 = plt.subplots()
 # истинный полезный сигнал
@@ -176,7 +208,6 @@ lgnd1 = ax1.legend(
     ['Модель наблюдений', 'Истинный полезный сигнал'], loc='lower center')
 fig1.set_figwidth(6)
 fig1.set_figheight(5)
-# plt.gcf().canvas.set_window_title("Истинный полезный сигнал и набор наблюдений")
 plt.show()
 
 fig4, ax4 = plt.subplots()
@@ -186,33 +217,32 @@ lgnd4 = ax4.legend(
     ['Полезный сигнал', 'Оценка полезного сигнала'], loc='lower center')
 fig4.set_figwidth(6)
 fig4.set_figheight(5)
-# plt.gcf().canvas.set_window_title(
-#     "Истинный полезный сигнал и оценка полезного сигнала")
 plt.show()
+
+# --------- Доверительные интервалы ---------
+
+left_95, right_95, left_99, right_99, intl_linspace = confidence_intervals()
 
 fig2, ax2 = plt.subplots()
 ax2.plot(x, Y_S, c='#00FFFF')
-ax2.plot(x, a_95, c='#FF4500')
-ax2.plot(x, b_95, c='#7B68EE')
+ax2.plot(intl_linspace, left_95, c='#FF4500')
+ax2.plot(intl_linspace, right_95, c='#7B68EE')
 lgnd2 = ax2.legend(['Полезный сигнал', 'Правост. доверит. интервал для 1-apha = 0.95',
                     'Левостор. доверит. интервал для 1-apha = 0.95'], loc='lower center')
 fig2.set_figwidth(6)
 fig2.set_figheight(5)
-# plt.gcf().canvas.set_window_title(
-#     "Истинный полезный сигнал и левосторонние и правосторонние доверительные интервалы")
 plt.show()
 
 fig3, ax3 = plt.subplots()
 ax3.plot(x, Y_S, c='#FF1493')
-ax3.plot(x, a_99, c='#663399')
-ax3.plot(x, b_99, c='#7CFC00')
+ax3.plot(intl_linspace, left_99, c='#663399')
+ax3.plot(intl_linspace, right_99, c='#7CFC00')
 lgnd3 = ax3.legend(['Полезный сигнал', 'Правост. доверит. интервал для 1-apha = 0.99',
                     'Левостор. доверит. интервал для 1-apha = 0.99'], loc='lower center')
 fig3.set_figwidth(6)
 fig3.set_figheight(5)
-# plt.gcf().canvas.set_window_title(
-#     "Истинный полезный сигнал и левосторонние и правосторонние доверительные интервалы")
 plt.show()
+
 
 print("____________ЗАДАНИЕ №5____________ \n")
 # По остаткам регрессии построить оценку плотности распределения случайной ошибки
@@ -220,16 +250,15 @@ print("____________ЗАДАНИЕ №5____________ \n")
 
 print("Построение гистограммы \n")
 
-# fig5, ax5 = plt.subplots()
-# sns.distplot(E_sr, hist=True, kde=False,
-#              bins=7, color='blue',
-#              hist_kws={'edgecolor': 'black'},
-#              kde_kws={'linewidth': 2})
-# plt.show()
+fig5, ax5 = plt.subplots()
+sns.histplot(E_sr, stat='density', kde=False, color='black', bins=7)
 
-print("____________ЗАДАНИЕ №6____________ \n")
-# Вычислить оценку дисперсии σ2 случайной ошибки.
-σ_sr = 1/(40)*norm_E_sr**2
+norm_disrtib_t = np.linspace(-5, 5, 1000)
+plt.plot(norm_disrtib_t, norm.pdf(norm_disrtib_t, 0, σ_sr))
+
+plt.show()
+
+
 print("Оценка дисперсии случайной ошибки = ", template.format(σ_sr), "\n")
 
 print("____________ЗАДАНИЕ №7____________ \n")
@@ -264,34 +293,15 @@ for i in range(l+1):
     pi[i] = abs(sp.stats.norm.cdf(t[i+1]/σ_sr) - sp.stats.norm.cdf(t[i]/σ_sr))
 
 # вычисление того, сколько ошибок попало в каждый интервал разбиения
+print("Количество, попавшее в столбцы:")
+T = 0
 for i in range(l-1):
     for j in range(n):
         if (E_sr[j] >= t[i]) and (E_sr[j] < t[i+1]):
             ni[i] += 1
 
-    print(ni[i])
-fig6, ax6 = plt.subplots()
-f = np.zeros(l)
-for i in range(l-1):
-    f[i] = ni[i]/(n*step)
-for i in range(l-1):
-    ax6.plot([t[i+1], t[i+2]], [f[i], f[i]], c='r')
-for i in range(l-1):
-    ax6.plot([t[i+1], t[i+1]], [0, f[i]], c='r')
-    ax6.plot([t[i + 2], t[i + 2]], [0, f[i]], c='r')
-for i in range(l-2):
-    pid[i+1] = ni[i+1]/n
-fig6.set_figwidth(6)
-fig6.set_figheight(5)
-t_1 = np.zeros(100)
-t_1[0] = t[1]
-t_1[99] = t[l]
-step_1 = abs(t[1]-t[l])/99
-for i in range(98):
-    t_1[i+1] = step_1 + t_1[i]
-plt.plot(t_1, norm. pdf(t_1, 0, σ))
-plt.show()
-T = 0
+    print(i, "\t", ni[i])
+
 for i in range(l+1):
     T += (pi[i]-pid[i])**2/pi[i]
 T = T*n
